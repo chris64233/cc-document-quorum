@@ -20,6 +20,7 @@ import com.chris64233.cc.documentquorum.service.views.DecisionResultView;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,9 +76,11 @@ public class SigningService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SIGNER_NOT_FOUND,
                         "签署人不存在: " + signerExternalId));
 
-        PolicyRequirement requirement = policyRepo.findByVersionIdAndRole(version.getId(), role)
+        int policyVersionNo = version.getCurrentPolicyVersionNo();
+        PolicyRequirement requirement = policyRepo
+                .findByVersionIdAndPolicyVersionNoAndRole(version.getId(), policyVersionNo, role)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ELIGIBILITY,
-                        "角色 " + role + " 不在该版本签署策略中"));
+                        "角色 " + role + " 不在该版本当前签署策略中"));
         if (!signer.getRoles().contains(role)) {
             throw new BusinessException(ErrorCode.ELIGIBILITY,
                     "签署人 " + signerExternalId + " 不具备角色 " + role);
@@ -88,11 +91,12 @@ public class SigningService {
                     "签署人 " + signerExternalId + " 已对该版本作出过决定");
         }
 
-        decisionRepo.saveAndFlush(new SignDecision(version, signer, role, decision, eventId));
+        decisionRepo.saveAndFlush(new SignDecision(version, signer, role, decision, eventId,
+                policyVersionNo, decision == DecisionType.APPROVE));
 
         if (decision == DecisionType.REJECT && requirement.isVetoPower()) {
             version.setStatus(VersionStatus.REJECTED);
-        } else if (decision == DecisionType.APPROVE && quorumMet(version.getId())) {
+        } else if (decision == DecisionType.APPROVE && quorumMet(version.getId(), policyVersionNo)) {
             activate(version);
         }
 
@@ -115,21 +119,34 @@ public class SigningService {
                 existingVersion.getStatus().name(), true);
     }
 
-    private boolean quorumMet(Long versionId) {
+    /**
+     * 按指定策略版本计算法定人数：只统计仍计入进度的同意。
+     * 调用方必须持有版本行悲观锁，保证计算锁定在明确的策略版本上。
+     */
+    boolean quorumMet(Long versionId, int policyVersionNo) {
         Map<String, Long> approvals = decisionRepo.findByVersionIdOrderByIdAsc(versionId).stream()
-                .filter(d -> d.getDecision() == DecisionType.APPROVE)
+                .filter(d -> d.isCounted() && d.getDecision() == DecisionType.APPROVE)
                 .collect(Collectors.groupingBy(SignDecision::getRole, Collectors.counting()));
-        List<PolicyRequirement> requirements = policyRepo.findByVersionId(versionId);
+        List<PolicyRequirement> requirements =
+                policyRepo.findByVersionIdAndPolicyVersionNo(versionId, policyVersionNo);
         return requirements.stream()
                 .allMatch(r -> approvals.getOrDefault(r.getRole(), 0L) >= r.getRequiredApprovals());
     }
 
-    private void activate(DocumentVersion version) {
+    /**
+     * 生效切换：文件行悲观锁串行化。若当前生效版本比本版本更新，
+     * 本版本已达到的法定人数只能使其进入 SUPERSEDED，不能错误取代较新版本。
+     */
+    void activate(DocumentVersion version) {
         ControlledDocument document = documentRepo.findByIdForUpdate(version.getDocument().getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND, "文件不存在"));
         Optional<EffectiveVersion> current = effectiveRepo.findById(document.getId());
         if (current.isPresent()) {
             DocumentVersion previous = current.get().getVersion();
+            if (previous.getVersionNo() > version.getVersionNo()) {
+                version.setStatus(VersionStatus.SUPERSEDED);
+                return;
+            }
             if (!previous.getId().equals(version.getId())) {
                 previous.setStatus(VersionStatus.SUPERSEDED);
                 current.get().setVersion(version);
@@ -138,5 +155,7 @@ public class SigningService {
             effectiveRepo.save(new EffectiveVersion(document.getId(), version));
         }
         version.setStatus(VersionStatus.EFFECTIVE);
+        version.setEffectivePolicyVersionNo(version.getCurrentPolicyVersionNo());
+        version.setActivatedAt(Instant.now());
     }
 }

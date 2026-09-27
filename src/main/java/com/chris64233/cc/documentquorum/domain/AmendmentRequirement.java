@@ -11,21 +11,22 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+/**
+ * 修订提议的新策略内容（按角色）。修订生效时整体拷贝为下一代
+ * {@link PolicyRequirement}。
+ */
 @Entity
-@Table(name = "policy_requirement",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"version_id", "policy_version_no", "role"}))
-public class PolicyRequirement {
+@Table(name = "amendment_requirement",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"amendment_id", "role"}))
+public class AmendmentRequirement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "version_id", nullable = false, updatable = false)
-    private DocumentVersion version;
-
-    @Column(name = "policy_version_no", nullable = false, updatable = false)
-    private int policyVersionNo;
+    @JoinColumn(name = "amendment_id", nullable = false, updatable = false)
+    private PolicyAmendment amendment;
 
     @Column(nullable = false, updatable = false)
     private String role;
@@ -36,13 +37,12 @@ public class PolicyRequirement {
     @Column(name = "veto_power", nullable = false, updatable = false)
     private boolean vetoPower;
 
-    protected PolicyRequirement() {
+    protected AmendmentRequirement() {
     }
 
-    public PolicyRequirement(DocumentVersion version, int policyVersionNo, String role,
-                             int requiredApprovals, boolean vetoPower) {
-        this.version = version;
-        this.policyVersionNo = policyVersionNo;
+    public AmendmentRequirement(PolicyAmendment amendment, String role,
+                                int requiredApprovals, boolean vetoPower) {
+        this.amendment = amendment;
         this.role = role;
         this.requiredApprovals = requiredApprovals;
         this.vetoPower = vetoPower;
@@ -52,12 +52,8 @@ public class PolicyRequirement {
         return id;
     }
 
-    public DocumentVersion getVersion() {
-        return version;
-    }
-
-    public int getPolicyVersionNo() {
-        return policyVersionNo;
+    public PolicyAmendment getAmendment() {
+        return amendment;
     }
 
     public String getRole() {

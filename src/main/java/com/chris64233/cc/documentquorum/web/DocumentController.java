@@ -2,10 +2,14 @@ package com.chris64233.cc.documentquorum.web;
 
 import com.chris64233.cc.documentquorum.service.DocumentService;
 import com.chris64233.cc.documentquorum.service.SigningService;
+import com.chris64233.cc.documentquorum.service.views.CarryOverView;
 import com.chris64233.cc.documentquorum.service.views.DecisionResultView;
 import com.chris64233.cc.documentquorum.service.views.DecisionView;
 import com.chris64233.cc.documentquorum.service.views.DocumentView;
+import com.chris64233.cc.documentquorum.service.views.EffectivenessView;
+import com.chris64233.cc.documentquorum.service.views.PolicyDiffView;
 import com.chris64233.cc.documentquorum.service.views.PolicyRequirementView;
+import com.chris64233.cc.documentquorum.service.views.PolicyVersionView;
 import com.chris64233.cc.documentquorum.service.views.ProgressView;
 import com.chris64233.cc.documentquorum.service.views.VersionView;
 import jakarta.validation.Valid;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -49,7 +54,8 @@ public class DocumentController {
         List<PolicyRequirementView> policy = request.policy().stream()
                 .map(p -> new PolicyRequirementView(p.role(), p.requiredApprovals(), p.vetoPower()))
                 .toList();
-        VersionView view = documentService.createVersion(docCode, request.content(), policy);
+        VersionView view = documentService.createVersion(docCode, request.content(), policy,
+                request.amendmentRole(), request.amendmentThreshold());
         return ResponseEntity.status(HttpStatus.CREATED).body(view);
     }
 
@@ -66,6 +72,30 @@ public class DocumentController {
     @GetMapping("/{docCode}/versions/{versionNo}/progress")
     public ProgressView getProgress(@PathVariable String docCode, @PathVariable int versionNo) {
         return documentService.getProgress(docCode, versionNo);
+    }
+
+    @GetMapping("/{docCode}/versions/{versionNo}/policy")
+    public List<PolicyVersionView> listPolicyVersions(@PathVariable String docCode,
+                                                      @PathVariable int versionNo) {
+        return documentService.listPolicyVersions(docCode, versionNo);
+    }
+
+    @GetMapping("/{docCode}/versions/{versionNo}/policy/diff")
+    public PolicyDiffView getPolicyDiff(@PathVariable String docCode,
+                                        @PathVariable int versionNo,
+                                        @RequestParam int from,
+                                        @RequestParam int to) {
+        return documentService.getPolicyDiff(docCode, versionNo, from, to);
+    }
+
+    @GetMapping("/{docCode}/versions/{versionNo}/decisions/carry-over")
+    public CarryOverView getCarryOver(@PathVariable String docCode, @PathVariable int versionNo) {
+        return documentService.getCarryOver(docCode, versionNo);
+    }
+
+    @GetMapping("/{docCode}/versions/{versionNo}/effectiveness")
+    public EffectivenessView getEffectiveness(@PathVariable String docCode, @PathVariable int versionNo) {
+        return documentService.getEffectiveness(docCode, versionNo);
     }
 
     @GetMapping("/{docCode}/versions/{versionNo}/decisions")

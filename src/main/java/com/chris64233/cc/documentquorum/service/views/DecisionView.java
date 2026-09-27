@@ -6,5 +6,7 @@ public record DecisionView(String eventId,
                            String signerExternalId,
                            String role,
                            String decision,
+                           int policyVersionNo,
+                           boolean counted,
                            Instant createdAt) {
 }

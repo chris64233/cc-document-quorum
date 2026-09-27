@@ -38,6 +38,15 @@ public class DocumentVersion {
     @Column(nullable = false)
     private VersionStatus status = VersionStatus.PENDING;
 
+    @Column(name = "current_policy_version_no", nullable = false)
+    private int currentPolicyVersionNo = 1;
+
+    @Column(name = "effective_policy_version_no")
+    private Integer effectivePolicyVersionNo;
+
+    @Column(name = "activated_at")
+    private Instant activatedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -72,6 +81,30 @@ public class DocumentVersion {
 
     public void setStatus(VersionStatus status) {
         this.status = status;
+    }
+
+    public int getCurrentPolicyVersionNo() {
+        return currentPolicyVersionNo;
+    }
+
+    public void setCurrentPolicyVersionNo(int currentPolicyVersionNo) {
+        this.currentPolicyVersionNo = currentPolicyVersionNo;
+    }
+
+    public Integer getEffectivePolicyVersionNo() {
+        return effectivePolicyVersionNo;
+    }
+
+    public void setEffectivePolicyVersionNo(Integer effectivePolicyVersionNo) {
+        this.effectivePolicyVersionNo = effectivePolicyVersionNo;
+    }
+
+    public Instant getActivatedAt() {
+        return activatedAt;
+    }
+
+    public void setActivatedAt(Instant activatedAt) {
+        this.activatedAt = activatedAt;
     }
 
     public Instant getCreatedAt() {

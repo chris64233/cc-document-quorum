@@ -7,6 +7,7 @@ public record VersionView(Long id,
                           int versionNo,
                           String status,
                           String content,
+                          int currentPolicyVersionNo,
                           Instant createdAt,
                           List<PolicyRequirementView> policy) {
 }
