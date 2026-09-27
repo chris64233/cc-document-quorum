@@ -8,5 +8,8 @@ public record VersionView(Long id,
                           String status,
                           String content,
                           Instant createdAt,
-                          List<PolicyRequirementView> policy) {
+                          List<PolicyRequirementView> policy,
+                          int activePolicyNo,
+                          String amendRole,
+                          Integer amendRequiredApprovals) {
 }

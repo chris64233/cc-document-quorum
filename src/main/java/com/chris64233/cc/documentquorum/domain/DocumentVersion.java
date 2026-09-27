@@ -38,16 +38,34 @@ public class DocumentVersion {
     @Column(nullable = false)
     private VersionStatus status = VersionStatus.PENDING;
 
+    /** 修订管理角色（创建版本时由原策略指定，固化不可变）；为 null 表示该版本不允许策略修订 */
+    @Column(name = "amend_role", updatable = false)
+    private String amendRole;
+
+    /** 修订门槛：管理角色中需要多少名不同签署人同意才能让修订生效 */
+    @Column(name = "amend_required_approvals", updatable = false)
+    private Integer amendRequiredApprovals;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @Column(name = "effective_at")
+    private Instant effectiveAt;
 
     protected DocumentVersion() {
     }
 
     public DocumentVersion(ControlledDocument document, int versionNo, String content) {
+        this(document, versionNo, content, null, null);
+    }
+
+    public DocumentVersion(ControlledDocument document, int versionNo, String content,
+                           String amendRole, Integer amendRequiredApprovals) {
         this.document = document;
         this.versionNo = versionNo;
         this.content = content;
+        this.amendRole = amendRole;
+        this.amendRequiredApprovals = amendRequiredApprovals;
     }
 
     public Long getId() {
@@ -72,6 +90,22 @@ public class DocumentVersion {
 
     public void setStatus(VersionStatus status) {
         this.status = status;
+    }
+
+    public String getAmendRole() {
+        return amendRole;
+    }
+
+    public Integer getAmendRequiredApprovals() {
+        return amendRequiredApprovals;
+    }
+
+    public Instant getEffectiveAt() {
+        return effectiveAt;
+    }
+
+    public void markEffective(Instant effectiveAt) {
+        this.effectiveAt = effectiveAt;
     }
 
     public Instant getCreatedAt() {

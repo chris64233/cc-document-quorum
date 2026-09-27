@@ -13,7 +13,7 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "policy_requirement",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"version_id", "role"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"policy_version_id", "role"}))
 public class PolicyRequirement {
 
     @Id
@@ -21,8 +21,8 @@ public class PolicyRequirement {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "version_id", nullable = false, updatable = false)
-    private DocumentVersion version;
+    @JoinColumn(name = "policy_version_id", nullable = false, updatable = false)
+    private PolicyVersion policyVersion;
 
     @Column(nullable = false, updatable = false)
     private String role;
@@ -36,8 +36,8 @@ public class PolicyRequirement {
     protected PolicyRequirement() {
     }
 
-    public PolicyRequirement(DocumentVersion version, String role, int requiredApprovals, boolean vetoPower) {
-        this.version = version;
+    public PolicyRequirement(PolicyVersion policyVersion, String role, int requiredApprovals, boolean vetoPower) {
+        this.policyVersion = policyVersion;
         this.role = role;
         this.requiredApprovals = requiredApprovals;
         this.vetoPower = vetoPower;
@@ -47,8 +47,8 @@ public class PolicyRequirement {
         return id;
     }
 
-    public DocumentVersion getVersion() {
-        return version;
+    public PolicyVersion getPolicyVersion() {
+        return policyVersion;
     }
 
     public String getRole() {

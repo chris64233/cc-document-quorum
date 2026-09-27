@@ -37,4 +37,19 @@ public class SignerService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.SIGNER_NOT_FOUND, "签署人不存在: " + externalId));
         return new SignerView(signer.getId(), signer.getExternalId(), signer.getName(), signer.getRoles());
     }
+
+    /**
+     * 更新签署人角色集合。角色变化不影响已作出决定的审计记录，
+     * 但策略修订生效时会按签署人当前角色评估已有同意能否沿用。
+     */
+    @Transactional
+    public SignerView updateRoles(String externalId, Set<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            throw new BusinessException(ErrorCode.VALIDATION, "签署人至少需要一个角色");
+        }
+        Signer signer = signerRepo.findByExternalId(externalId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SIGNER_NOT_FOUND, "签署人不存在: " + externalId));
+        signer.setRoles(roles);
+        return new SignerView(signer.getId(), signer.getExternalId(), signer.getName(), signer.getRoles());
+    }
 }

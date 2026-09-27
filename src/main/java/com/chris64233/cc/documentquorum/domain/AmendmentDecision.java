@@ -15,27 +15,28 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 
+/**
+ * 管理角色对一次策略修订的投票。eventId 全局唯一保证幂等；
+ * 同一签署人对同一修订只能投票一次。
+ */
 @Entity
-@Table(name = "sign_decision", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"version_id", "signer_id"}),
+@Table(name = "amendment_decision", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"amendment_id", "signer_id"}),
         @UniqueConstraint(columnNames = "event_id")
 })
-public class SignDecision {
+public class AmendmentDecision {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "version_id", nullable = false, updatable = false)
-    private DocumentVersion version;
+    @JoinColumn(name = "amendment_id", nullable = false, updatable = false)
+    private PolicyAmendment amendment;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "signer_id", nullable = false, updatable = false)
     private Signer signer;
-
-    @Column(nullable = false, updatable = false)
-    private String role;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
@@ -44,44 +45,29 @@ public class SignDecision {
     @Column(name = "event_id", nullable = false, updatable = false)
     private String eventId;
 
-    /** 作出决定时生效的策略版本号（审计用） */
-    @Column(name = "policy_no", nullable = false, updatable = false)
-    private int policyNo;
-
-    /** 因策略修订而失效的决定记录失效于哪个策略版本号；null 表示仍计入进度 */
-    @Column(name = "voided_policy_no")
-    private Integer voidedPolicyNo;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    protected SignDecision() {
+    protected AmendmentDecision() {
     }
 
-    public SignDecision(DocumentVersion version, Signer signer, String role, DecisionType decision,
-                        String eventId, int policyNo) {
-        this.version = version;
+    public AmendmentDecision(PolicyAmendment amendment, Signer signer, DecisionType decision, String eventId) {
+        this.amendment = amendment;
         this.signer = signer;
-        this.role = role;
         this.decision = decision;
         this.eventId = eventId;
-        this.policyNo = policyNo;
     }
 
     public Long getId() {
         return id;
     }
 
-    public DocumentVersion getVersion() {
-        return version;
+    public PolicyAmendment getAmendment() {
+        return amendment;
     }
 
     public Signer getSigner() {
         return signer;
-    }
-
-    public String getRole() {
-        return role;
     }
 
     public DecisionType getDecision() {
@@ -90,18 +76,6 @@ public class SignDecision {
 
     public String getEventId() {
         return eventId;
-    }
-
-    public int getPolicyNo() {
-        return policyNo;
-    }
-
-    public Integer getVoidedPolicyNo() {
-        return voidedPolicyNo;
-    }
-
-    public void setVoidedPolicyNo(Integer voidedPolicyNo) {
-        this.voidedPolicyNo = voidedPolicyNo;
     }
 
     public Instant getCreatedAt() {

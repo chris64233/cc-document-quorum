@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface PolicyRequirementRepository extends JpaRepository<PolicyRequirement, Long> {
 
-    List<PolicyRequirement> findByVersionId(Long versionId);
+    List<PolicyRequirement> findByPolicyVersionId(Long policyVersionId);
 
-    Optional<PolicyRequirement> findByVersionIdAndRole(Long versionId, String role);
+    Optional<PolicyRequirement> findByPolicyVersionIdAndRole(Long policyVersionId, String role);
 }
